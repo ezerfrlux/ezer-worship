@@ -1,0 +1,116 @@
+:root {
+	/* Palette */
+	--canvas: #102d35;
+	--ink: #e8f7f5;
+	--ink-muted: rgb(232 247 245 / 72%);
+	--border-strong: rgb(232 247 245 / 44%);
+	--hover: rgb(232 247 245 / 10%);
+	--accent: #d9fa57;
+	--accent-hover: color-mix(in srgb, var(--accent) 88%, var(--ink) 12%);
+	--accent-ink: var(--canvas);
+
+	/* Typography */
+	--font-sans: var(--font-plus-jakarta-sans, "Plus Jakarta Sans"), ui-sans-serif, system-ui, sans-serif;
+	--font-display: var(--font-space-grotesk, "Space Grotesk"), ui-sans-serif, system-ui, sans-serif;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+	/* Layout */
+	--header-h: 6.5rem;
+	--gutter: 1.25rem;
+	--maxw: 90rem;
+
+	color-scheme: dark;
+}
+
+@media (min-width: 640px) {
+	:root {
+		--gutter: 2rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	:root {
+		--header-h: 4.5rem;
+		--gutter: 3rem;
+	}
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	background-color: var(--canvas);
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-height: 100svh;
+	padding-top: var(--header-h);
+	background-color: var(--canvas);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	font-size: 1rem;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+p,
+nav {
+	margin: 0;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+button {
+	font: inherit;
+}
+
+img,
+svg {
+	display: block;
+	max-width: 100%;
+}
+
+::selection {
+	background-color: var(--accent);
+	color: var(--accent-ink);
+}
+
+:focus-visible {
+	outline: 2px solid var(--ink);
+	outline-offset: 4px;
+}
+
+a,
+button {
+	-webkit-tap-highlight-color: transparent;
+}
+
+.site-main {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
