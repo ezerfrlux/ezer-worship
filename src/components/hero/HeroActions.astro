@@ -1,0 +1,79 @@
+---
+interface Props {
+	primaryLabel: string;
+	primaryHref: string;
+	secondaryLabel: string;
+	secondaryHref: string;
+}
+
+const { primaryLabel, primaryHref, secondaryLabel, secondaryHref } = Astro.props;
+---
+
+<div class="actions">
+	<a class="btn btn--primary" href={primaryHref}>
+		{primaryLabel}
+		<span class="btn-arrow" aria-hidden="true">→</span>
+	</a>
+	<a class="btn btn--ghost" href={secondaryHref}>{secondaryLabel}</a>
+</div>
+
+<style>
+	.actions {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		justify-content: center;
+		gap: 0.75rem;
+		width: 100%;
+		max-width: 28rem;
+		margin-top: 1.5rem;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 3rem;
+		padding-inline: 1.75rem;
+		border-radius: 999px;
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1;
+		transition:
+			background-color 150ms ease,
+			border-color 150ms ease;
+	}
+
+	.btn--primary {
+		background-color: var(--accent);
+		color: var(--accent-ink);
+	}
+
+	.btn--primary:hover {
+		background-color: var(--accent-hover);
+	}
+
+	.btn--ghost {
+		border: 1px solid var(--border-strong);
+		color: var(--ink);
+	}
+
+	.btn--ghost:hover {
+		background-color: var(--hover);
+	}
+
+	.btn-arrow {
+		margin-left: 0.5rem;
+	}
+
+	@media (min-width: 640px) {
+		.actions {
+			flex-direction: row;
+			align-items: center;
+		}
+
+		.btn {
+			height: 3.25rem;
+		}
+	}
+</style>

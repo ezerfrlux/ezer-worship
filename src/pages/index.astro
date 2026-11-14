@@ -1,10 +1,12 @@
 ---
 import HeroWorship from "../components/HeroWorship.astro";
+import StoreSection from "../components/StoreSection.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-	<main class="site-main">
+	<main id="main-content" class="site-main">
 		<HeroWorship />
+		<StoreSection limit={6} />
 	</main>
 </Layout>

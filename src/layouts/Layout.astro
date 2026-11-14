@@ -2,6 +2,16 @@
 import { Font } from "astro:assets";
 import SiteHeader from "../components/SiteHeader.astro";
 import "../styles/global.css";
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const {
+	title = "EZER-WORSHIP — Worship media pack",
+	description = "Ezer Worship — high-quality worship loops, backgrounds, and visual patches for churches.",
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -9,20 +19,39 @@ import "../styles/global.css";
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
-		<meta name="theme-color" content="#102d35" />
+		<meta name="theme-color" content="#0a0a0a" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<meta
-			name="description"
-			content="EZER-WORSHIP — high-quality worship loops, backgrounds, and visual patches for churches."
-		/>
-		<title>EZER-WORSHIP — Worship media pack</title>
+		<meta name="description" content={description} />
+		<title>{title}</title>
 		<Font cssVariable="--font-plus-jakarta-sans" />
 		<Font cssVariable="--font-space-grotesk" />
 	</head>
 	<body>
+		<a class="skip-link" href="#main-content">Skip to content</a>
 		<SiteHeader />
 		<slot />
+		<script>
+			import { formatCartCount, readCart, type CartItem } from "../lib/cart";
+
+			const count = document.querySelector<HTMLElement>("[data-cart-count]");
+			const link = document.querySelector<HTMLElement>("[data-cart-link]");
+
+			const sync = (items: CartItem[] = readCart()) => {
+				if (count) count.textContent = formatCartCount(items.length);
+				if (link) {
+					link.setAttribute(
+						"aria-label",
+						`Shopping bag, ${items.length} ${items.length === 1 ? "item" : "items"}`,
+					);
+				}
+			};
+
+			sync();
+			window.addEventListener("ezer:cart-change", (event) => {
+				sync((event as CustomEvent<CartItem[]>).detail);
+			});
+		</script>
 	</body>
 </html>

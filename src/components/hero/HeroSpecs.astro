@@ -1,0 +1,75 @@
+---
+const specs = [
+	{ label: "EZER / AUDIO & VISUAL", align: "start" },
+	{ label: "FIG. 02 / 4K MOTION LOOP", align: "center" },
+	{ label: "STATUS: ACTIVE", align: "end", active: true },
+];
+---
+
+<div class="hero-foot">
+	<div class="specs">
+		{specs.map((spec) => (
+			<p class:list={["spec", `spec--${spec.align}`]}>
+				{spec.active && <span class="dot" aria-hidden="true"></span>}
+				{spec.label}
+			</p>
+		))}
+	</div>
+</div>
+
+<style>
+	.hero-foot {
+		position: relative;
+		width: 100%;
+		max-width: var(--maxw);
+		margin-inline: auto;
+		padding: 0 var(--gutter) 1.25rem;
+	}
+
+	.specs {
+		display: grid;
+		gap: 0.375rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid color-mix(in srgb, var(--border-strong) 20%, transparent);
+		font-family: var(--font-mono);
+		font-size: 0.5625rem;
+		letter-spacing: 0.16em;
+		color: var(--ink-muted);
+	}
+
+	.spec {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		line-height: 1.4;
+	}
+
+	.dot {
+		width: 0.25rem;
+		height: 0.25rem;
+		border-radius: 50%;
+		background-color: var(--accent);
+		flex: none;
+	}
+
+	@media (min-width: 640px) {
+		.specs {
+			grid-template-columns: 1fr 1fr 1fr;
+		}
+
+		.spec--start {
+			justify-content: flex-start;
+		}
+
+		.spec--end {
+			justify-content: flex-end;
+		}
+	}
+
+	@media (max-width: 639px) {
+		.hero-foot {
+			padding-bottom: 1rem;
+		}
+	}
+</style>

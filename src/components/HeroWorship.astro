@@ -1,4 +1,9 @@
 ---
+import { createMotionTracks } from "../lib/waveform";
+import HeroActions from "./hero/HeroActions.astro";
+import HeroSpecs from "./hero/HeroSpecs.astro";
+import MotionPreviewCard from "./hero/MotionPreviewCard.astro";
+
 interface Props {
 	title?: string;
 	description?: string;
@@ -10,67 +15,14 @@ interface Props {
 
 const {
 	title = "Set the room before the first note.",
+	description = "Worship loops, backgrounds, and visual patches for churches — built to sit quietly behind the moment.",
 	primaryLabel = "Explore loops",
 	primaryHref = "/loops",
 	secondaryLabel = "Free resources",
 	secondaryHref = "/free",
 } = Astro.props;
 
-/* Multi-track DAW: one independently animated waveform per stem. */
-const BAR_COUNT = 96;
-
-const trackSpecs = [
-	{ id: "TRK 01", name: "PAD", kind: "pad", accent: false, duration: 3.4, dyn: 0.3, phase: 0.6, offset: 0 },
-	{ id: "TRK 02", name: "SYNTH", kind: "synth", accent: false, duration: 2.8, dyn: 0.46, phase: 1.7, offset: 130 },
-	{ id: "TRK 03", name: "BEAT", kind: "beat", accent: true, duration: 2.2, dyn: 0.72, phase: 0.35, offset: 260 },
-	{ id: "TRK 04", name: "AMBIENT", kind: "ambient", accent: false, duration: 3.6, dyn: 0.26, phase: 2.4, offset: 390 },
-] as const;
-
-const tracks = trackSpecs.map((spec) => {
-	const bars = Array.from({ length: BAR_COUNT }, (_, index) => {
-		const t = index / (BAR_COUNT - 1);
-
-		/* Soft taper at the edges so each stem spans the full lane. */
-		const envelope = 0.45 + 0.55 * Math.pow(Math.sin(Math.PI * (0.04 + t * 0.92)), 0.3);
-
-		let shape = 0.5;
-
-		if (spec.kind === "pad") {
-			shape =
-				0.48 +
-				0.26 * Math.sin(t * Math.PI * 2.4 + spec.phase) +
-				0.14 * Math.sin(t * Math.PI * 6.1 + spec.phase * 1.6);
-		} else if (spec.kind === "synth") {
-			shape =
-				0.24 +
-				0.5 * Math.abs(Math.sin(t * Math.PI * 14 + spec.phase)) +
-				0.1 * Math.sin(t * Math.PI * 4.5);
-		} else if (spec.kind === "beat") {
-			/* Periodic transients with an exponential decay, like a kick stem. */
-			const local = ((t * 12 + spec.phase) % 1 + 1) % 1;
-			shape = (0.16 + 0.74 * Math.exp(-local * 4.5)) * (0.8 + 0.2 * Math.sin(t * Math.PI * 6));
-		} else {
-			shape =
-				0.4 +
-				0.18 * Math.sin(t * Math.PI * 2.1 + spec.phase) +
-				0.12 * Math.sin(t * Math.PI * 7.7 + spec.phase * 2);
-		}
-
-		const height = Math.max(0.1, Math.min(0.92, shape * envelope));
-		const dyn = spec.dyn * (0.8 + 0.2 * Math.sin(t * Math.PI * 5.5 + spec.phase));
-
-		return {
-			height: Number((height * 100).toFixed(2)),
-			low: Number((height * 100 * (1 - dyn * 0.4)).toFixed(2)),
-			high: Number((height * 100 * (1 + dyn * 0.14)).toFixed(2)),
-			/* Negative, staggered delays: each stem plays mid-cycle from the
-			   first frame and crests travel left to right within the lane. */
-			delay: Math.round(-spec.duration * 1000 + spec.offset + t * 640),
-		};
-	});
-
-	return { ...spec, bars };
-});
+const tracks = createMotionTracks();
 ---
 
 <section class="hero" aria-labelledby="hero-title">
@@ -79,68 +31,22 @@ const tracks = trackSpecs.map((spec) => {
 
 	<div class="hero-inner">
 		<h1 id="hero-title" class="hero-title">{title}</h1>
+
+		<p class="hero-lead">{description}</p>
+
 		<div class="preview">
-			<div
-				class="preview-frame"
-				role="img"
-				aria-label="Motion loop preview: a multitrack DAW view with four stacked audio stems and their waveforms; the beat stem is soloed in signal lime. Framed by technical readouts."
-			>
-				<div class="preview-grid" aria-hidden="true"></div>
-
-				<span class="corner corner--tl">DAW // MULTITRACK VIEW</span>
-				<span class="corner corner--tr">
-					<span class="dot dot--tiny" aria-hidden="true"></span>
-					FOCUS LOCKED
-				</span>
-
-				<div class="daw" aria-hidden="true">
-					{tracks.map((track) => (
-						<div
-							class:list={["track", track.accent && "track--active"]}
-							style={`--dur:${track.duration}s`}
-						>
-							<span class="track-label">{track.id}: {track.name}</span>
-							<div class="track-lane">
-								<div class="track-bars">
-									{track.bars.map((bar) => (
-										<span
-											class:list={["bar", track.accent && "bar--accent"]}
-											style={`--h:${bar.height}%;--low:${bar.low}%;--high:${bar.high}%;--delay:${bar.delay}ms`}
-										></span>
-									))}
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
-
-				<span class="corner corner--bl">FIG. 02 / 4K AUDIO STACKS</span>
-				<span class="corner corner--br">
-					<span class="dot dot--tiny" aria-hidden="true"></span>
-					STEREO_MIX_01
-				</span>
-			</div>
+			<MotionPreviewCard tracks={tracks} />
 		</div>
 
-		<div class="actions">
-			<a class="btn btn--primary" href={primaryHref}>
-				{primaryLabel}
-				<span class="btn-arrow" aria-hidden="true">→</span>
-			</a>
-			<a class="btn btn--ghost" href={secondaryHref}>{secondaryLabel}</a>
-		</div>
+		<HeroActions
+			primaryLabel={primaryLabel}
+			primaryHref={primaryHref}
+			secondaryLabel={secondaryLabel}
+			secondaryHref={secondaryHref}
+		/>
 	</div>
 
-	<div class="hero-foot">
-		<div class="specs">
-			<p class="spec spec--start">EZER / AUDIO &amp; VISUAL</p>
-			<p class="spec spec--center">FIG. 02 / 4K MOTION LOOP</p>
-			<p class="spec spec--end">
-				<span class="dot dot--tiny" aria-hidden="true"></span>
-				STATUS: ACTIVE
-			</p>
-		</div>
-	</div>
+	<HeroSpecs />
 </section>
 
 <style>
@@ -157,7 +63,7 @@ const tracks = trackSpecs.map((spec) => {
 		position: absolute;
 		inset: 0;
 		pointer-events: none;
-		background: radial-gradient(60% 50% at 50% 0%, rgb(232 247 245 / 7%), transparent 70%);
+		background: radial-gradient(60% 50% at 50% 0%, rgb(255 255 255 / 7%), transparent 70%);
 	}
 
 	.hero-grid {
@@ -165,8 +71,8 @@ const tracks = trackSpecs.map((spec) => {
 		inset: 0;
 		pointer-events: none;
 		background-image:
-			linear-gradient(to right, rgb(232 247 245 / 4%) 1px, transparent 1px),
-			linear-gradient(to bottom, rgb(232 247 245 / 4%) 1px, transparent 1px);
+			linear-gradient(to right, rgb(255 255 255 / 4%) 1px, transparent 1px),
+			linear-gradient(to bottom, rgb(255 255 255 / 4%) 1px, transparent 1px);
 		background-size: 72px 72px;
 		-webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, #000 10%, transparent 78%);
 		mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, #000 10%, transparent 78%);
@@ -186,33 +92,9 @@ const tracks = trackSpecs.map((spec) => {
 		text-align: center;
 	}
 
-	.eyebrow {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		font-family: var(--font-mono);
-		font-size: 0.625rem;
-		letter-spacing: 0.28em;
-		color: var(--ink-muted);
-	}
-
-	.dot {
-		width: 0.375rem;
-		height: 0.375rem;
-		border-radius: 50%;
-		background-color: var(--accent);
-		flex: none;
-	}
-
-	.dot--tiny {
-		width: 0.25rem;
-		height: 0.25rem;
-	}
-
 	.hero-title {
 		max-width: 20ch;
-		margin-top: 1rem;
+		margin-top: 0;
 		font-family: var(--font-display);
 		font-size: clamp(2.5rem, 6.4vw, 4.5rem);
 		font-weight: 500;
@@ -224,7 +106,8 @@ const tracks = trackSpecs.map((spec) => {
 
 	.hero-lead {
 		max-width: 36rem;
-		margin-top: 1rem;
+		margin-top: 0.875rem;
+		font-family: var(--font-sans);
 		font-size: 0.9375rem;
 		line-height: 1.75;
 		color: var(--ink-muted);
@@ -237,347 +120,19 @@ const tracks = trackSpecs.map((spec) => {
 		margin-top: 1.75rem;
 	}
 
-	.preview-frame {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		min-height: 15rem;
-		padding: 2.5rem 0.75rem 2.25rem;
-		overflow: hidden;
-		border: 1px solid color-mix(in srgb, var(--border-strong) 70%, transparent);
-		background:
-			radial-gradient(ellipse 60% 70% at 50% 50%, rgb(217 250 87 / 7%), transparent 70%),
-			color-mix(in srgb, var(--canvas) 95%, transparent);
-		-webkit-backdrop-filter: blur(4px);
-		backdrop-filter: blur(4px);
-	}
-
-	.preview-grid {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		background-image:
-			linear-gradient(to right, rgb(232 247 245 / 5%) 1px, transparent 1px),
-			linear-gradient(to bottom, rgb(232 247 245 / 5%) 1px, transparent 1px);
-		background-size: 40px 40px;
-		-webkit-mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 20%, transparent 88%);
-		mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 20%, transparent 88%);
-	}
-
-	.corner {
-		position: absolute;
-		z-index: 2;
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-family: var(--font-mono);
-		font-size: 0.5625rem;
-		letter-spacing: 0.14em;
-		line-height: 1;
-		color: var(--ink-muted);
-	}
-
-	.corner--tl {
-		top: 0.875rem;
-		left: 1rem;
-	}
-
-	.corner--tr {
-		top: 0.875rem;
-		right: 1rem;
-		text-align: right;
-	}
-
-	.corner--bl {
-		bottom: 0.875rem;
-		left: 1rem;
-	}
-
-	.corner--br {
-		bottom: 0.875rem;
-		right: 1rem;
-	}
-
-	.daw {
-		position: relative;
-		display: flex;
-		flex: 1 1 auto;
-		flex-direction: column;
-		justify-content: center;
-		gap: 0.375rem;
-		width: 100%;
-		min-height: 0;
-	}
-
-	.track {
-		display: grid;
-		grid-template-columns: 6.25rem minmax(0, 1fr);
-		align-items: center;
-		gap: 0.625rem;
-		padding: 0.1875rem 0.25rem;
-		border-radius: 2px;
-	}
-
-	.track + .track {
-		border-top: 1px solid color-mix(in srgb, var(--border-strong) 9%, transparent);
-	}
-
-	.track--active {
-		background-color: rgb(217 250 87 / 4%);
-		box-shadow: inset 2px 0 0 var(--accent);
-	}
-
-	.track-label {
-		overflow: hidden;
-		font-family: var(--font-mono);
-		font-size: 0.5625rem;
-		letter-spacing: 0.1em;
-		line-height: 1.2;
-		color: var(--ink-muted);
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.track--active .track-label {
-		color: var(--ink);
-	}
-
-	.track--active .track-label::before {
-		content: "";
-		display: inline-block;
-		width: 0.25rem;
-		height: 0.25rem;
-		margin-right: 0.375rem;
-		border-radius: 50%;
-		background-color: var(--accent);
-		vertical-align: middle;
-	}
-
-	.track-lane {
-		position: relative;
-		display: flex;
-		align-items: center;
-		height: 1.75rem;
-		padding-inline: 0.25rem;
-		background-color: rgb(232 247 245 / 2.5%);
-		border-radius: 2px;
-	}
-
-	.track-lane::before {
-		content: "";
-		position: absolute;
-		top: 50%;
-		right: 0.25rem;
-		left: 0.25rem;
-		height: 1px;
-		background-color: var(--border-strong);
-		opacity: 0.12;
-	}
-
-	.track--active .track-lane {
-		background-color: rgb(217 250 87 / 4%);
-	}
-
-	.track-bars {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: clamp(1px, 0.14vw, 2px);
-		width: 100%;
-		height: 100%;
-	}
-
-	.bar {
-		display: block;
-		flex: 1 1 0;
-		min-width: 1px;
-		max-width: 3.5px;
-		height: var(--h);
-		border-radius: 999px;
-		background-color: var(--ink-muted);
-		opacity: 0.3;
-		animation: equalize var(--dur, 3s) cubic-bezier(0.37, 0, 0.63, 1) infinite;
-		animation-delay: var(--delay);
-		will-change: height;
-	}
-
-	.track--active .bar {
-		background-color: var(--accent);
-		opacity: 0.92;
-	}
-
-	@keyframes equalize {
-		0%,
-		100% {
-			height: var(--low);
-		}
-		50% {
-			height: var(--high);
-		}
-	}
-
-	.actions {
-		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		justify-content: center;
-		gap: 0.75rem;
-		width: 100%;
-		max-width: 28rem;
-		margin-top: 1.5rem;
-	}
-
-	.btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 3rem;
-		padding-inline: 1.75rem;
-		border-radius: 999px;
-		font-size: 0.875rem;
-		font-weight: 500;
-		line-height: 1;
-		transition:
-			background-color 150ms ease,
-			border-color 150ms ease;
-	}
-
-	.btn--primary {
-		background-color: var(--accent);
-		color: var(--accent-ink);
-	}
-
-	.btn--primary:hover {
-		background-color: var(--accent-hover);
-	}
-
-	.btn--ghost {
-		border: 1px solid var(--border-strong);
-		color: var(--ink);
-	}
-
-	.btn--ghost:hover {
-		background-color: var(--hover);
-	}
-
-	.btn-arrow {
-		margin-left: 0.5rem;
-	}
-
-	.hero-foot {
-		position: relative;
-		width: 100%;
-		max-width: var(--maxw);
-		margin-inline: auto;
-		padding: 0 var(--gutter) 1.25rem;
-	}
-
-	.specs {
-		display: grid;
-		gap: 0.375rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid color-mix(in srgb, var(--border-strong) 20%, transparent);
-		font-family: var(--font-mono);
-		font-size: 0.5625rem;
-		letter-spacing: 0.16em;
-		color: var(--ink-muted);
-	}
-
-	.spec {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.375rem;
-		line-height: 1.4;
-	}
-
 	@media (min-width: 640px) {
 		.hero-lead {
 			font-size: 1rem;
 		}
-
-		.actions {
-			flex-direction: row;
-			align-items: center;
-		}
-
-		.btn {
-			height: 3.25rem;
-		}
-
-		.specs {
-			grid-template-columns: 1fr 1fr 1fr;
-		}
-
-		.spec--start {
-			justify-content: flex-start;
-		}
-
-		.spec--end {
-			justify-content: flex-end;
-		}
-
-		.corner {
-			font-size: 0.625rem;
-		}
-
-		.preview-frame {
-			min-height: 17rem;
-			padding: 2.75rem 1.25rem 2.5rem;
-		}
-
-		.track {
-			grid-template-columns: 6.5rem minmax(0, 1fr);
-			gap: 0.875rem;
-		}
-
-		.track-lane {
-			height: 2.25rem;
-		}
 	}
 
-	@media (min-width: 768px) {
-		.preview-frame {
-			min-height: 17.5rem;
-		}
-	}
-
-	@media (max-width: 479px) {
-		.track-bars .bar:nth-child(even) {
-			display: none;
-		}
-	}
-
-	@media (max-width: 359px) {
-		.corner {
-			font-size: 0.5rem;
-			letter-spacing: 0.06em;
+	@media (max-width: 639px) {
+		.hero-inner {
+			padding: 1.5rem var(--gutter);
 		}
 
-		.corner--tl,
-		.corner--bl {
-			left: 0.625rem;
-		}
-
-		.corner--tr,
-		.corner--br {
-			right: 0.625rem;
-		}
-
-		.track {
-			grid-template-columns: 5.75rem minmax(0, 1fr);
-			gap: 0.5rem;
-		}
-
-		.track-label {
-			font-size: 0.5rem;
-			letter-spacing: 0.05em;
-		}
-
-		.track-lane {
-			height: 1.625rem;
+		.preview {
+			margin-top: 1.5rem;
 		}
 	}
 
@@ -589,12 +144,6 @@ const tracks = trackSpecs.map((spec) => {
 		.preview {
 			max-width: 46rem;
 			margin-top: 1.5rem;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.bar {
-			animation: none;
 		}
 	}
 </style>

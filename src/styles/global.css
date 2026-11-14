@@ -1,10 +1,11 @@
 :root {
 	/* Palette */
-	--canvas: #102d35;
-	--ink: #e8f7f5;
-	--ink-muted: rgb(232 247 245 / 72%);
-	--border-strong: rgb(232 247 245 / 44%);
-	--hover: rgb(232 247 245 / 10%);
+	--canvas: #0a0a0a;
+	--canvas-raised: #111111;
+	--ink: #ffffff;
+	--ink-muted: #a1a1aa;
+	--border-strong: rgb(255 255 255 / 16%);
+	--hover: rgb(255 255 255 / 8%);
 	--accent: #d9fa57;
 	--accent-hover: color-mix(in srgb, var(--accent) 88%, var(--ink) 12%);
 	--accent-ink: var(--canvas);
@@ -102,6 +103,24 @@ button {
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;
+}
+
+.skip-link {
+	position: fixed;
+	top: 0.75rem;
+	left: 0.75rem;
+	z-index: 100;
+	padding: 0.75rem 1rem;
+	background-color: var(--ink);
+	color: var(--canvas);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	transform: translateY(calc(-100% - 1rem));
+	transition: transform 150ms ease;
+}
+
+.skip-link:focus-visible {
+	transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {

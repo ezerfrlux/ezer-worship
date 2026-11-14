@@ -1,0 +1,27 @@
+---
+import type { WaveTrack } from "../../lib/waveform";
+import WaveformTrack from "./WaveformTrack.astro";
+
+interface Props {
+	tracks: WaveTrack[];
+}
+
+const { tracks } = Astro.props;
+---
+
+<div class="daw" aria-hidden="true">
+	{tracks.map((track) => <WaveformTrack track={track} />)}
+</div>
+
+<style>
+	.daw {
+		position: relative;
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.375rem;
+		width: 100%;
+		min-height: 0;
+	}
+</style>
