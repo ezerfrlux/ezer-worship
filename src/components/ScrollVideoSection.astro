@@ -1,0 +1,548 @@
+---
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
+interface Props {
+    /** Still image used when no frame sequence is available. */
+    poster?: string;
+    label?: string;
+    meta?: string;
+    title?: string;
+    description?: string;
+}
+
+const {
+    poster = "/video3-poster.jpg",
+    label = "In the room",
+    meta = "MK-300",
+    title = "Prepared before the first note.",
+    description = "The rig that shapes the room, ready long before the doors open.",
+} = Astro.props;
+
+const framesDirectory = join(process.cwd(), "public", "frames");
+
+let frames: string[] = [];
+
+try {
+    frames = readdirSync(framesDirectory)
+        .filter((file) => file.endsWith(".webp"))
+        .sort()
+        .map((file) => `/frames/${file}`);
+} catch {
+    frames = [];
+}
+
+const firstFrame = frames[0] ?? poster;
+---
+
+<section
+    class="scroll-video"
+    aria-labelledby="scroll-video-title"
+    data-scroll-video
+>
+    <div class="scroll-video-sticky">
+        <div class="stage">
+            <div class="visual" aria-hidden="true">
+                <div
+                    class="media"
+                    data-scroll-video-media
+                    style={`--video-poster: url("${firstFrame}");`}
+                >
+                    <img
+                        class="frame"
+                        src={firstFrame}
+                        alt=""
+                        aria-hidden="true"
+                        draggable="false"
+                        decoding="async"
+                        fetchpriority="high"
+                        data-scroll-video-frame
+                    />
+                </div>
+
+                <div class="scrim scrim-top"></div>
+                <div class="scrim scrim-bottom"></div>
+            </div>
+
+            <div class="overlay">
+                <header class="frame-head">
+                    <p class="frame-label">{label}</p>
+                    <p class="frame-meta">{meta}</p>
+                </header>
+
+                <footer class="frame-foot">
+                    <div class="frame-copy">
+                        <p class="scroll-hint" data-scroll-hint>
+                            Scroll to scrub
+                            <span class="hint-arrow" aria-hidden="true">↓</span>
+                        </p>
+                        <h2 id="scroll-video-title" class="frame-title">{title}</h2>
+                        <p class="frame-lead">{description}</p>
+                    </div>
+                </footer>
+            </div>
+        </div>
+
+        <script
+            type="application/json"
+            is:inline
+            data-scroll-video-manifest
+            set:html={JSON.stringify(frames)}
+        ></script>
+    </div>
+</section>
+
+<script>
+    const section = document.querySelector<HTMLElement>("[data-scroll-video]");
+
+    if (section && section.dataset.enhanced !== "true") {
+        section.dataset.enhanced = "true";
+
+        const manifest = section.querySelector<HTMLScriptElement>(
+            "[data-scroll-video-manifest]",
+        );
+        const image = section.querySelector<HTMLImageElement>(
+            "[data-scroll-video-frame]",
+        );
+        const hint = section.querySelector<HTMLElement>("[data-scroll-hint]");
+        const header = document.querySelector<HTMLElement>(".site-header");
+        const root = document.documentElement;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const desktop = window.matchMedia("(min-width: 768px)");
+
+        let frames: string[] = [];
+
+        try {
+            const parsed = JSON.parse(manifest?.textContent ?? "[]");
+
+            if (Array.isArray(parsed)) frames = parsed;
+        } catch {
+            // Keep the empty fallback; the poster remains visible.
+        }
+
+        const totalFrames = frames.length;
+
+        const clamp = (value: number, min: number, max: number) =>
+            Math.min(max, Math.max(min, value));
+
+        const preloadLimit = 6;
+        const loaded = new Uint8Array(totalFrames);
+        let preloadCursor = 0;
+        let preloadActive = 0;
+
+        const pumpPreload = () => {
+            while (preloadActive < preloadLimit && preloadCursor < totalFrames) {
+                const index = preloadCursor;
+                preloadCursor += 1;
+
+                if (loaded[index] === 1) continue;
+
+                preloadActive += 1;
+
+                const preloader = new Image();
+
+                preloader.decoding = "async";
+                preloader.setAttribute("fetchpriority", "low");
+
+                const settle = () => {
+                    loaded[index] = 1;
+                    preloadActive -= 1;
+                    pumpPreload();
+                };
+
+                preloader.addEventListener("load", settle, { once: true });
+                preloader.addEventListener("error", settle, { once: true });
+                preloader.src = frames[index];
+            }
+        };
+
+        const startPreload = () => {
+            if (!desktop.matches || totalFrames <= 1) return;
+            pumpPreload();
+        };
+
+        const requestIdle = window.requestIdleCallback as
+            | ((callback: () => void, options?: { timeout?: number }) => number)
+            | undefined;
+
+        if (typeof requestIdle === "function") {
+            requestIdle(startPreload, { timeout: 1200 });
+        } else {
+            window.setTimeout(startPreload, 400);
+        }
+
+        desktop.addEventListener("change", () => {
+            if (desktop.matches) startPreload();
+        });
+
+        let sectionTop = 0;
+        let scrollRange = 1;
+        let frameRequest = 0;
+        let inView = false;
+        let lastFrame = -1;
+
+        const measure = () => {
+            const rect = section.getBoundingClientRect();
+            sectionTop = rect.top + window.scrollY;
+            scrollRange = Math.max(1, section.offsetHeight - window.innerHeight);
+        };
+
+        const readProgress = () => {
+            if (scrollRange <= 1) return 0;
+            return clamp((window.scrollY - sectionTop) / scrollRange, 0, 1);
+        };
+
+        const paint = (progress: number) => {
+            section.style.setProperty("--video-progress", progress.toFixed(4));
+
+            if (hint) hint.classList.toggle("is-hidden", progress > 0.02);
+
+            if (image && totalFrames > 0) {
+                const frame = clamp(
+                    Math.round(progress * (totalFrames - 1)),
+                    0,
+                    totalFrames - 1,
+                );
+
+                if (frame !== lastFrame) {
+                    lastFrame = frame;
+                    image.src = frames[frame];
+                    section.dataset.frame = String(frame + 1);
+                }
+            }
+        };
+
+        const render = () => {
+            frameRequest = 0;
+
+            if (!inView || reduceMotion.matches) return;
+
+            paint(readProgress());
+        };
+
+        const requestRender = () => {
+            if (!inView || reduceMotion.matches || frameRequest) return;
+            frameRequest = window.requestAnimationFrame(render);
+        };
+
+        const setNavHidden = (hidden: boolean) => {
+            if (hidden) {
+                root.dataset.hideNav = "true";
+            } else {
+                delete root.dataset.hideNav;
+            }
+
+            if (!header) return;
+
+            if (hidden) {
+                if (header.contains(document.activeElement)) {
+                    (document.activeElement as HTMLElement | null)?.blur();
+                }
+                header.setAttribute("inert", "");
+            } else {
+                header.removeAttribute("inert");
+            }
+        };
+
+        if (image) {
+            const markReady = () => section.classList.add("is-ready");
+
+            if (image.complete && image.naturalWidth > 0) {
+                markReady();
+            } else {
+                image.addEventListener("load", markReady, { once: true });
+            }
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+
+                if (!entry) return;
+
+                inView = entry.isIntersecting;
+                setNavHidden(inView);
+
+                if (inView) {
+                    measure();
+                    lastFrame = -1;
+                    paint(readProgress());
+                    requestRender();
+                } else if (frameRequest) {
+                    window.cancelAnimationFrame(frameRequest);
+                    frameRequest = 0;
+                }
+            },
+            { threshold: 0 },
+        );
+
+        observer.observe(section);
+
+        window.addEventListener("scroll", requestRender, { passive: true });
+
+        const onResize = () => {
+            measure();
+
+            if (inView) {
+                lastFrame = -1;
+                paint(readProgress());
+            }
+        };
+
+        window.addEventListener("resize", onResize, { passive: true });
+        window.addEventListener("orientationchange", onResize, { passive: true });
+
+        reduceMotion.addEventListener("change", () => {
+            if (reduceMotion.matches) {
+                if (frameRequest) {
+                    window.cancelAnimationFrame(frameRequest);
+                    frameRequest = 0;
+                }
+
+                lastFrame = -1;
+                paint(0);
+            } else {
+                onResize();
+                requestRender();
+            }
+        });
+    }
+</script>
+
+<style>
+    .scroll-video {
+        --video-progress: 0;
+
+        position: relative;
+        width: 100%;
+        height: 500vh;
+        height: 500svh;
+        background-color: var(--canvas);
+    }
+
+    .scroll-video-sticky {
+        position: sticky;
+        top: 0;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 100vh;
+        height: 100svh;
+        overflow: hidden;
+    }
+
+    /* Ocupa el 100% absoluto de la pantalla sin restricciones de ancho */
+    .stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .visual {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .media {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        transform: scale(calc(1.06 + var(--video-progress) * 0.06));
+        transform-origin: center;
+        background-color: var(--canvas);
+        background-image: var(--video-poster);
+        background-position: center;
+        background-size: cover;
+    }
+
+    .frame {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 400ms ease;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .scroll-video.is-ready .frame {
+        opacity: 1;
+    }
+
+    .scrim {
+        position: absolute;
+        right: 0;
+        left: 0;
+        pointer-events: none;
+    }
+
+    .scrim-top {
+        top: 0;
+        height: 46%;
+        background: linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--canvas) 88%, transparent) 0%,
+            color-mix(in srgb, var(--canvas) 60%, transparent) 32%,
+            transparent 100%
+        );
+    }
+
+    .scrim-bottom {
+        bottom: 0;
+        height: 62%;
+        background: linear-gradient(
+            to top,
+            color-mix(in srgb, var(--canvas) 92%, transparent) 4%,
+            color-mix(in srgb, var(--canvas) 58%, transparent) 42%,
+            transparent
+        );
+    }
+
+    .overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(1.5rem, 4vh, 2.5rem) clamp(1.25rem, 3vw, 2.75rem)
+            clamp(1.75rem, 4vh, 2.75rem);
+        pointer-events: none;
+    }
+
+    .frame-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .frame-label,
+    .frame-meta {
+        font-family: var(--font-mono);
+        font-size: 0.625rem;
+        letter-spacing: 0.12em;
+        line-height: 1;
+        color: rgb(255 255 255 / 82%);
+    }
+
+    .frame-meta {
+        color: rgb(255 255 255 / 62%);
+    }
+
+    .frame-foot {
+        display: block;
+    }
+
+    .frame-copy {
+        max-width: 34rem;
+    }
+
+    .scroll-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.5625rem;
+        letter-spacing: 0.14em;
+        color: var(--ink-muted);
+        transition:
+            opacity 220ms ease,
+            transform 220ms ease;
+    }
+
+    .scroll-hint.is-hidden {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    .hint-arrow {
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        line-height: 1;
+    }
+
+    .frame-title {
+        max-width: 17ch;
+        font-family: var(--font-display);
+        font-size: clamp(1.875rem, 4.4vw, 3.25rem);
+        font-weight: 500;
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+        color: var(--ink);
+        text-wrap: balance;
+    }
+
+    .frame-lead {
+        max-width: 40ch;
+        margin-top: 0.75rem;
+        font-size: 0.9375rem;
+        line-height: 1.7;
+        color: var(--ink-muted);
+        text-wrap: pretty;
+    }
+
+    :global(.site-header) {
+        transition:
+            transform 300ms ease,
+            opacity 300ms ease,
+            visibility 0s linear 0s;
+    }
+
+    :global(html[data-hide-nav="true"] .site-header) {
+        transform: translateY(-100%);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+            transform 300ms ease,
+            opacity 300ms ease,
+            visibility 0s linear 300ms;
+    }
+
+    @media (min-width: 768px) {
+        .scroll-video {
+            height: 500vh;
+            height: 500svh;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .scroll-video {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .scroll-video {
+            height: 100vh;
+            height: 100svh;
+        }
+
+        .scroll-video-sticky {
+            position: relative;
+        }
+
+        .media {
+            transform: none;
+        }
+
+        .frame {
+            transition: none;
+        }
+
+        .scroll-hint {
+            display: none;
+        }
+
+        :global(.site-header),
+        :global(html[data-hide-nav="true"] .site-header) {
+            transition: none;
+        }
+    }
+</style>

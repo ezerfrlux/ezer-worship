@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "frames": "mkdir -p public/frames && ffmpeg -i public/video2.mp4 -vf \"fps=30,scale=1920:-1:flags=lanczos\" -c:v libwebp -q:v 8 -f image2 public/frames/frame_%04d.webp",
     "astro": "astro"
   },
   "dependencies": {
