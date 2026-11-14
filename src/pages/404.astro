@@ -1,0 +1,177 @@
+---
+// src/pages/404.astro
+---
+
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Página no encontrada — EZER-WORSHIP</title>
+        <!-- Importación de fuentes oficiales para asegurar el renderizado moderno -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+    </head>
+    <body>
+        <main class="not-found-main">
+            <div class="not-found-container">
+                <div class="error-meta">
+                    <span class="error-code">404</span>
+                    <span class="error-divider">/</span>
+                    <span class="error-label">System error: Route unavailable</span>
+                </div>
+                
+                <h1 class="error-title">This page could not be found.</h1>
+                
+                <p class="error-lead">
+                    The link you followed may be broken, or the session path has changed. Let's get you back to the main stage.
+                </p>
+
+                <div class="error-actions">
+                    <a href="/" class="btn-primary">
+                        Return home
+                        <span class="btn-arrow" aria-hidden="true">→</span>
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <style>
+            :root {
+                --canvas: #0a0a0a;
+                --ink: #ffffff;
+                --ink-muted: #a1a1aa;
+                --border-strong: rgb(255 255 255 / 16%);
+                --accent: #d9fa57;
+                --accent-hover: color-mix(in srgb, var(--accent) 88%, var(--ink) 12%);
+                --accent-ink: var(--canvas);
+                
+                /* Tipografías conectadas correctamente */
+                --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+                --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+                --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                
+                --gutter: 2rem;
+                color-scheme: dark;
+            }
+
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: var(--canvas);
+                color: var(--ink);
+                font-family: var(--font-sans);
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+
+            .not-found-main {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                min-height: 100svh;
+                padding: var(--gutter);
+                background-color: var(--canvas);
+                /* Sutil patrón de líneas estructurales de fondo (Nothing OS style) */
+                background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+                background-size: 32px 32px;
+            }
+
+            .not-found-container {
+                width: 100%;
+                max-width: 42rem;
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+                padding-left: clamp(0rem, 4vw, 3rem);
+                border-left: 1px solid var(--border-strong);
+            }
+
+            .error-meta {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-family: var(--font-mono);
+                font-size: 0.75rem;
+                letter-spacing: 0.14em;
+                color: var(--ink-muted);
+                text-transform: uppercase;
+            }
+
+            .error-code {
+                color: var(--accent);
+                font-weight: 600;
+            }
+
+            .error-divider {
+                color: var(--border-strong);
+            }
+
+            /* Aquí se aplica la Space Grotesk con un look sumamente moderno y limpio */
+            .error-title {
+                font-family: var(--font-display);
+                font-size: clamp(2.5rem, 6vw, 4rem);
+                font-weight: 600;
+                line-height: 1.02;
+                letter-spacing: -0.05em;
+                color: var(--ink);
+                text-wrap: balance;
+            }
+
+            .error-lead {
+                font-size: 1.0625rem;
+                line-height: 1.7;
+                color: var(--ink-muted);
+                max-width: 38ch;
+                text-wrap: pretty;
+            }
+
+            .error-actions {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-top: 1rem;
+            }
+
+            .btn-primary {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.875rem;
+                padding: 1rem 1.75rem;
+                background-color: var(--accent);
+                color: var(--accent-ink);
+                font-family: var(--font-sans);
+                font-size: 0.9375rem;
+                font-weight: 500;
+                border-radius: 6px;
+                text-decoration: none;
+                transition: background-color 200ms ease, transform 150ms ease;
+            }
+
+            .btn-primary:hover {
+                background-color: var(--accent-hover);
+            }
+
+            .btn-primary:active {
+                transform: scale(0.98);
+            }
+
+            .btn-arrow {
+                font-size: 1rem;
+                line-height: 1;
+                transition: transform 200ms ease;
+            }
+
+            .btn-primary:hover .btn-arrow {
+                transform: translateX(4px);
+            }
+        </style>
+    </body>
+</html>

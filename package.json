@@ -21,6 +21,7 @@
     "@types/react-dom": "^19.3.0",
     "astro": "^7.4.8",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "wavesurfer.js": "^8.1.0"
   }
 }

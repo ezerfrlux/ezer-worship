@@ -3,7 +3,9 @@ import { Font } from "astro:assets";
 import CartDrawer from "../components/CartDrawer.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import "../styles/global.css";
-
+import BentoStoreSection from "../components/BentoStoreSection.astro";
+import { imageConfig } from "astro:assets";
+import AudioPreview from "../components/AudioPreview.astro";
 interface Props {
 	title?: string;
 	description?: string;
@@ -34,6 +36,8 @@ const {
 		<SiteHeader />
 		<slot />
 		<CartDrawer />
+		<BentoStoreSection />
+		<AudioPreview  src="./../../audio/song1.mp3" title="In Jesus Name" artist="Israel Houghton"/>
 		<script>
 			import { formatCartCount, readCart, type CartItem } from "../lib/cart";
 

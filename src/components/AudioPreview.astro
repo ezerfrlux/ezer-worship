@@ -1,0 +1,196 @@
+---
+interface Props {
+    src: string;
+    title: string;
+    artist?: string;
+}
+
+const { src, title, artist = "EZER-WORSHIP" } = Astro.props;
+---
+
+<div class="audio-card" data-audio-player data-src={src}>
+    <div class="audio-info">
+        <button class="play-btn" data-play-btn aria-label="Reproducir preview">
+            <!-- Icono de Play -->
+            <svg class="icon-play" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <!-- Icono de Pause (oculto por defecto) -->
+            <svg class="icon-pause" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="display: none;">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        </button>
+        <div class="audio-meta">
+            <span class="audio-title">{title}</span>
+            <span class="audio-artist">{artist}</span>
+        </div>
+    </div>
+
+    <div class="waveform-container" data-waveform></div>
+
+    <span class="audio-time" data-time>0:00</span>
+</div>
+
+<script>
+    import WaveSurfer from 'wavesurfer.js';
+
+    document.querySelectorAll('[data-audio-player]').forEach((playerEl) => {
+        const src = playerEl.getAttribute('data-src');
+        const container = playerEl.querySelector('[data-waveform]');
+        const playBtn = playerEl.querySelector('[data-play-btn]');
+        const iconPlay = playerEl.querySelector('.icon-play') as HTMLElement;
+        const iconPause = playerEl.querySelector('.icon-pause') as HTMLElement;
+        const timeEl = playerEl.querySelector('[data-time]');
+
+        if (!container || !src) return;
+
+        // Función auxiliar para formatear segundos a M:SS
+        const formatTime = (seconds: number) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        };
+
+        const wavesurfer = WaveSurfer.create({
+            container: container as HTMLElement,
+            url: src,
+            waveColor: 'rgba(255, 255, 255, 0.2)', 
+            progressColor: '#d9fa57',              
+            cursorColor: '#d9fa57',               
+            cursorWidth: 2,                        
+            barWidth: 2,
+            barGap: 3,
+            barRadius: 2,
+            height: 36,
+            normalize: true,
+        });
+
+        wavesurfer.on('ready', () => {
+            const duration = wavesurfer.getDuration();
+            if (timeEl) {
+                timeEl.textContent = formatTime(duration);
+            }
+        });
+
+        playBtn?.addEventListener('click', () => {
+            wavesurfer.playPause();
+        });
+
+        wavesurfer.on('play', () => {
+            if (iconPlay) iconPlay.style.display = 'none';
+            if (iconPause) iconPause.style.display = 'block';
+        });
+
+        wavesurfer.on('pause', () => {
+            if (iconPlay) iconPlay.style.display = 'block';
+            if (iconPause) iconPause.style.display = 'none';
+        });
+
+        wavesurfer.on('timeupdate', (currentTime) => {
+            if (timeEl) {
+                const duration = wavesurfer.getDuration();
+                const remaining = Math.max(0, duration - currentTime);
+                timeEl.textContent = `-${formatTime(remaining)}`;
+            }
+        });
+
+        wavesurfer.on('finish', () => {
+            wavesurfer.seekTo(0);
+            const duration = wavesurfer.getDuration();
+            if (timeEl) {
+                timeEl.textContent = formatTime(duration);
+            }
+            if (iconPlay) iconPlay.style.display = 'block';
+            if (iconPause) iconPause.style.display = 'none';
+        });
+    });
+</script>
+
+<style>
+    .audio-card {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        width: 100%;
+        max-width: 36rem;
+        padding: 0.875rem 1.25rem;
+        background-color: var(--canvas-raised);
+        border: 1px solid var(--border-strong);
+        border-radius: 6px;
+        transition: border-color 200ms ease;
+    }
+
+    .audio-card:hover {
+        border-color: color-mix(in srgb, var(--border-strong) 60%, var(--ink) 40%);
+    }
+
+    .audio-info {
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        flex: 0 0 auto;
+    }
+
+    .play-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        border: 1px solid var(--border-strong);
+        background-color: var(--canvas);
+        color: var(--ink);
+        cursor: pointer;
+        transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+    }
+
+    .play-btn:hover {
+        background-color: var(--hover);
+        border-color: var(--ink);
+        transform: scale(1.04);
+    }
+
+    .play-btn:active {
+        transform: scale(0.96);
+    }
+
+    .audio-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+    }
+
+    .audio-title {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+    }
+
+    .audio-artist {
+        font-family: var(--font-mono);
+        font-size: 0.5625rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+    }
+
+    .waveform-container {
+        flex: 1 1 auto;
+        min-width: 0;
+        cursor: pointer;
+    }
+
+    .audio-time {
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        letter-spacing: 0.08em;
+        color: var(--ink-muted);
+        flex: 0 0 auto;
+        min-width: 2.75rem;
+        text-align: right;
+    }
+</style>

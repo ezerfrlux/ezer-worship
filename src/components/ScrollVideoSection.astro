@@ -3,21 +3,10 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 interface Props {
-    /** Still image used when no frame sequence is available. */
     poster?: string;
-    label?: string;
-    meta?: string;
-    title?: string;
-    description?: string;
 }
 
-const {
-    poster = "/video3-poster.jpg",
-    label = "In the room",
-    meta = "MK-300",
-    title = "Prepared before the first note.",
-    description = "The rig that shapes the room, ready long before the doors open.",
-} = Astro.props;
+const { poster = "/video3-poster.jpg" } = Astro.props;
 
 const framesDirectory = join(process.cwd(), "public", "frames");
 
@@ -33,6 +22,28 @@ try {
 }
 
 const firstFrame = frames[0] ?? poster;
+
+// Define aquí los diferentes textos que irán cambiando según el scroll
+const scrollSteps = [
+    {
+        label: "In the room",
+        meta: "MK-300",
+        title: "Prepared before the first note.",
+        description: "The rig that shapes the room, ready long before the doors open.",
+    },
+    {
+        label: "Live stage",
+        meta: "WORSHIP",
+        title: "Atmosphere filled with sound.",
+        description: "Every patch and preset built to carry the live environment seamlessly.",
+    },
+    {
+        label: "Multitracks",
+        meta: "AUDIO STEMS",
+        title: "Clean, pristine multitracks.",
+        description: "Sessions structured to mix, match, and elevate your Sunday set effortlessly.",
+    },
+];
 ---
 
 <section
@@ -66,8 +77,8 @@ const firstFrame = frames[0] ?? poster;
 
             <div class="overlay">
                 <header class="frame-head">
-                    <p class="frame-label">{label}</p>
-                    <p class="frame-meta">{meta}</p>
+                    <p class="frame-label" data-step-label>{scrollSteps[0].label}</p>
+                    <p class="frame-meta" data-step-meta>{scrollSteps[0].meta}</p>
                 </header>
 
                 <footer class="frame-foot">
@@ -76,8 +87,10 @@ const firstFrame = frames[0] ?? poster;
                             Scroll to scrub
                             <span class="hint-arrow" aria-hidden="true">↓</span>
                         </p>
-                        <h2 id="scroll-video-title" class="frame-title">{title}</h2>
-                        <p class="frame-lead">{description}</p>
+                        <div class="text-content" data-text-container>
+                            <h2 id="scroll-video-title" class="frame-title" data-step-title>{scrollSteps[0].title}</h2>
+                            <p class="frame-lead" data-step-desc>{scrollSteps[0].description}</p>
+                        </div>
                     </div>
                 </footer>
             </div>
@@ -88,6 +101,13 @@ const firstFrame = frames[0] ?? poster;
             is:inline
             data-scroll-video-manifest
             set:html={JSON.stringify(frames)}
+        ></script>
+
+        <script
+            type="application/json"
+            is:inline
+            data-scroll-steps
+            set:html={JSON.stringify(scrollSteps)}
         ></script>
     </div>
 </section>
@@ -101,23 +121,36 @@ const firstFrame = frames[0] ?? poster;
         const manifest = section.querySelector<HTMLScriptElement>(
             "[data-scroll-video-manifest]",
         );
+        const stepsData = section.querySelector<HTMLScriptElement>(
+            "[data-scroll-steps]",
+        );
         const image = section.querySelector<HTMLImageElement>(
             "[data-scroll-video-frame]",
         );
         const hint = section.querySelector<HTMLElement>("[data-scroll-hint]");
+        
+        const labelEl = section.querySelector<HTMLElement>("[data-step-label]");
+        const metaEl = section.querySelector<HTMLElement>("[data-step-meta]");
+        const titleEl = section.querySelector<HTMLElement>("[data-step-title]");
+        const descEl = section.querySelector<HTMLElement>("[data-step-desc]");
+        const textContainer = section.querySelector<HTMLElement>("[data-text-container]");
+
         const header = document.querySelector<HTMLElement>(".site-header");
         const root = document.documentElement;
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
         const desktop = window.matchMedia("(min-width: 768px)");
 
         let frames: string[] = [];
+        let steps: any[] = [];
 
         try {
-            const parsed = JSON.parse(manifest?.textContent ?? "[]");
+            const parsedFrames = JSON.parse(manifest?.textContent ?? "[]");
+            if (Array.isArray(parsedFrames)) frames = parsedFrames;
 
-            if (Array.isArray(parsed)) frames = parsed;
+            const parsedSteps = JSON.parse(stepsData?.textContent ?? "[]");
+            if (Array.isArray(parsedSteps)) steps = parsedSteps;
         } catch {
-            // Keep the empty fallback; the poster remains visible.
+            // Fallback
         }
 
         const totalFrames = frames.length;
@@ -180,6 +213,7 @@ const firstFrame = frames[0] ?? poster;
         let frameRequest = 0;
         let inView = false;
         let lastFrame = -1;
+        let currentStepIndex = -1;
 
         const measure = () => {
             const rect = section.getBoundingClientRect();
@@ -197,6 +231,7 @@ const firstFrame = frames[0] ?? poster;
 
             if (hint) hint.classList.toggle("is-hidden", progress > 0.02);
 
+            // 1. Actualizar frames del video con operadores intactos
             if (image && totalFrames > 0) {
                 const frame = clamp(
                     Math.round(progress * (totalFrames - 1)),
@@ -208,6 +243,32 @@ const firstFrame = frames[0] ?? poster;
                     lastFrame = frame;
                     image.src = frames[frame];
                     section.dataset.frame = String(frame + 1);
+                }
+            }
+
+            // 2. Actualizar textos dinámicamente según el progreso
+            if (steps.length > 0) {
+                const stepSize = 1 / steps.length;
+                const newStepIndex = clamp(Math.floor(progress / stepSize), 0, steps.length - 1);
+
+                if (newStepIndex !== currentStepIndex) {
+                    currentStepIndex = newStepIndex;
+                    const activeStep = steps[currentStepIndex];
+
+                    if (textContainer) {
+                        textContainer.style.opacity = "0";
+                        textContainer.style.transform = "translateY(8px)";
+                        
+                        setTimeout(() => {
+                            if (labelEl) labelEl.textContent = activeStep.label;
+                            if (metaEl) metaEl.textContent = activeStep.meta;
+                            if (titleEl) titleEl.textContent = activeStep.title;
+                            if (descEl) descEl.textContent = activeStep.description;
+
+                            textContainer.style.opacity = "1";
+                            textContainer.style.transform = "translateY(0)";
+                        }, 150);
+                    }
                 }
             }
         };
@@ -331,7 +392,6 @@ const firstFrame = frames[0] ?? poster;
         overflow: hidden;
     }
 
-    /* Ocupa el 100% absoluto de la pantalla sin restricciones de ancho */
     .stage {
         position: relative;
         width: 100%;
@@ -440,6 +500,11 @@ const firstFrame = frames[0] ?? poster;
 
     .frame-copy {
         max-width: 34rem;
+    }
+
+    .text-content {
+        transition: opacity 250ms ease, transform 250ms ease;
+        will-change: opacity, transform;
     }
 
     .scroll-hint {
