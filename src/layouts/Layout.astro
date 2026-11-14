@@ -1,5 +1,6 @@
 ---
 import { Font } from "astro:assets";
+import CartDrawer from "../components/CartDrawer.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import "../styles/global.css";
 
@@ -32,18 +33,19 @@ const {
 		<a class="skip-link" href="#main-content">Skip to content</a>
 		<SiteHeader />
 		<slot />
+		<CartDrawer />
 		<script>
 			import { formatCartCount, readCart, type CartItem } from "../lib/cart";
 
 			const count = document.querySelector<HTMLElement>("[data-cart-count]");
-			const link = document.querySelector<HTMLElement>("[data-cart-link]");
+			const trigger = document.querySelector<HTMLElement>("[data-cart-open]");
 
 			const sync = (items: CartItem[] = readCart()) => {
 				if (count) count.textContent = formatCartCount(items.length);
-				if (link) {
-					link.setAttribute(
+				if (trigger) {
+					trigger.setAttribute(
 						"aria-label",
-						`Shopping bag, ${items.length} ${items.length === 1 ? "item" : "items"}`,
+						`Open bag, ${items.length} ${items.length === 1 ? "item" : "items"}`,
 					);
 				}
 			};

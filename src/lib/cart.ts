@@ -1,7 +1,12 @@
+import type { ProductArt } from "../data/products";
+
 export interface CartItem {
 	id: string;
 	title: string;
 	price: string;
+	category?: string;
+	resources?: string;
+	art?: ProductArt;
 }
 
 const STORAGE_KEY = "ezer-cart";

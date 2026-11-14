@@ -19,9 +19,17 @@ const navigation = [
 			))}
 		</nav>
 
-		<a class="bag" href="/bag" aria-label="Shopping bag, 0 items" data-cart-link>
+		<button
+			class="bag"
+			type="button"
+			data-cart-open
+			aria-haspopup="dialog"
+			aria-controls="cart-drawer"
+			aria-expanded="false"
+			aria-label="Open bag, 0 items"
+		>
 			CART <span class="bag-count" data-cart-count>[00]</span>
-		</a>
+		</button>
 	</div>
 </header>
 
@@ -103,11 +111,13 @@ const navigation = [
 		justify-self: end;
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--border-strong);
+		background-color: transparent;
 		font-family: var(--font-mono);
 		font-size: 0.625rem;
 		letter-spacing: 0.16em;
 		line-height: 1;
 		color: var(--ink);
+		cursor: pointer;
 		transition: background-color 150ms ease;
 	}
 

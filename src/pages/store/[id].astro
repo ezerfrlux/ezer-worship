@@ -73,6 +73,11 @@ const license = product.specs.find((spec) => spec.label === "License")?.value ??
 								data-product-id={product.id}
 								data-product-title={product.title}
 								data-product-price={product.price}
+								data-product-category={categoryLabels[product.category]}
+								data-product-resources={product.resources}
+								data-art-glow={product.art.glow}
+								data-art-mid={product.art.mid}
+								data-art-base={product.art.base}
 								aria-pressed="false"
 							>
 								<span data-cart-label>Add to cart</span>
@@ -146,6 +151,15 @@ const license = product.specs.find((spec) => spec.label === "License")?.value ??
 		const id = button.dataset.productId ?? "";
 		const title = button.dataset.productTitle ?? "";
 		const price = button.dataset.productPrice ?? "";
+		const category = button.dataset.productCategory;
+		const resources = button.dataset.productResources;
+		const art = button.dataset.artGlow && button.dataset.artMid && button.dataset.artBase
+			? {
+					glow: button.dataset.artGlow,
+					mid: button.dataset.artMid,
+					base: button.dataset.artBase,
+				}
+			: undefined;
 
 		const label = button.querySelector<HTMLElement>("[data-cart-label]");
 		const icon = button.querySelector<HTMLElement>("[data-cart-icon]");
@@ -163,7 +177,7 @@ const license = product.specs.find((spec) => spec.label === "License")?.value ??
 				removeFromCart(id);
 				if (status) status.textContent = `${title} removed from cart.`;
 			} else {
-				addToCart({ id, title, price });
+				addToCart({ id, title, price, category, resources, art });
 				if (status) status.textContent = `${title} added to cart.`;
 			}
 
